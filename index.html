@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        *{
+            padding: 0;
+            margin: 0;
+        }
+        .content{
+            position: relative;
+            width: 800px;
+            margin: 0 auto;
+
+        }
+        canvas{
+            width: 800px;
+            height: 600px;;
+            border:1px solid #ddd;
+        }
+        .msg{
+            position: relative;
+            bottom: 0;
+            width: 100%;
+        }
+        .color{
+            position: relative;
+            display: flex;
+        }
+        .color li{
+            list-style: none;
+            width: 40px;
+            height: 40px;
+        }
+        .red{
+            background: red;
+        }
+        .yellow{
+            background: yellow;
+        }
+        .blue{
+            background: blue;
+        }
+        .black{
+            background: black;
+        }
+        .btn-group{
+            position: relative;
+            margin: 10px 0;
+        }
+        .clear{
+
+        }
+        .msg-content{
+
+        }
+    </style>
+</head>
+<body>
+<div class="content">
+    <canvas id="myCanvas" width="800" height="600">
+        您的浏览器不支持 HTML5 canvas 标签。</canvas>
+    <ul class="color">
+       <li class="red"></li>
+       <li class="yellow"></li>
+       <li class="blue"></li>
+       <li class="black"></li>
+    </ul>
+    <div class="btn-group">
+        <a class="clear-all">全部清除</a>
+        <a class="clear">橡皮擦</a>
+    </div>
+    <div class="msg">
+        <input type="text">
+        <a class="send">发送消息</a>
+    </div>
+    <div class="msg-content">
+
+    </div>
+
+</div>
+
+
+
+</body>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+var index = {
+    init:function(){
+        this.socket = io('http://localhost:3003');
+        var d = '';
+        var self = this;
+        this.c = document.getElementById("myCanvas");
+        this.ctx= this.c.getContext("2d");
+        this.curColor = "blue";
+        this.ctx.strokeStyle = self.curColor;
+
+        this.socket.on('msg', function (data) {
+            d+='<p>'+data.data+'</p>';
+            document.querySelector('.msg-content').innerHTML  = d
+        });
+        this.socket.on('clientStartDraw', function (data) {
+
+            self.ctx.strokeStyle = data.color;
+            console.log(self.ctx.strokeStyle)
+            self.ctx.beginPath();
+            self.ctx.moveTo(data.x,data.y);
+        });
+        this.socket.on('clientDrawing', function (data) {
+            self.ctx.strokeStyle = data.color;
+            self.ctx.lineTo(data.x,data.y);
+            self.ctx.stroke();
+        });
+        this.bind()
+    },
+
+    bind(){
+        var  $colorLi = document.querySelectorAll(".color li"),
+             $clearAll = document.querySelector(".clear-all"),
+             $clear = document.querySelector(".clear"),
+             $send = document.querySelector(".send"),
+             $input = document.querySelector('input');
+        var draw = false;
+        var clear = false; // 橡皮擦
+        var clearIng = false; //是否正在清除
+
+
+        var self = this;
+        $colorLi.forEach(function(v,k){
+            v.addEventListener('click',function(e){
+                console.log(e.target.classList[0]);
+                self.curColor = e.target.classList[0];
+                self.ctx.strokeStyle = self.curColor
+            })
+        });
+
+        this.c.addEventListener('mousedown',function(e){
+            if(clear){
+                clearIng = true
+            }else{
+                draw = true;
+                self.ctx.beginPath();
+                self.ctx.moveTo(e.layerX,e.layerY);
+                self.socket.emit('drawStart', {
+                    x: e.layerX ,
+                    y: e.layerY ,
+                    color: self.curColor
+                });
+            }
+
+        });
+        this.c.addEventListener('mousemove',function(e){
+            if(clear&&clearIng){
+                self.ctx.clearRect(e.layerX,e.layerY,20,20);
+            }else if(draw){
+                self. ctx.lineTo(e.layerX,e.layerY);
+                self.ctx.stroke();
+                self.socket.emit('drawing', {
+                    x: e.layerX ,
+                    y: e.layerY ,
+                    color: self.curColor
+                });
+            }
+
+        });
+        this.c.addEventListener('mouseup',function(e){
+            draw = false;
+            clearIng = false;
+        });
+        $clear.addEventListener('click',function(e){
+            clear = !clear;
+            var d = '橡皮擦';
+            if(clear){
+               d  = '使用橡皮擦中'
+            }
+            e.target.innerHTML = d
+        })
+        $clearAll.addEventListener('click',function(e){
+            self.ctx.clearRect(0,0,800,600);
+        });
+
+
+       $send.addEventListener('click',function(){
+            self.socket.emit('chat', { data: $input.value });
+        })
+    }
+}
+
+
+index.init()
+</script>
+
+</html>
