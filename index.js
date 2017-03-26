@@ -30,6 +30,12 @@ io.on('connection', function (socket) {
     socket.on('drawStart', function (data) {
         io.emit('clientStartDraw', data);
     });
+     socket.on('clearing', function (data) {
+        io.emit('clientClearing', data);
+    });
+      socket.on('clearAll', function (data) {
+        io.emit('clientClearAll', data);
+    });
     socket.on('drawing', function (data) {
         io.emit('clientDrawing', data);
     });
