@@ -15,8 +15,8 @@
 
         }
         canvas{
-            width: 800px;
-            height: 600px;;
+            width: 400px;
+            height: 300px;;
             border:1px solid #ddd;
         }
         .msg{
@@ -59,7 +59,7 @@
 </head>
 <body>
 <div class="content">
-    <canvas id="myCanvas" width="800" height="600">
+    <canvas id="myCanvas" width="400" height="300">
         您的浏览器不支持 HTML5 canvas 标签。</canvas>
     <ul class="color">
        <li class="red"></li>
@@ -100,6 +100,16 @@ var index = {
             d+='<p>'+data.data+'</p>';
             document.querySelector('.msg-content').innerHTML  = d
         });
+
+ 		this.socket.on('clientClearAll', function (data) {
+  			self.ctx.clearRect(0,0,800,600);
+           
+        });
+        	this.socket.on('clientClearing', function (data) {
+  			 self.ctx.clearRect(data.x,data.y,20,20);
+           
+        });
+
         this.socket.on('clientStartDraw', function (data) {
 
             self.ctx.strokeStyle = data.color;
@@ -153,6 +163,11 @@ var index = {
         this.c.addEventListener('mousemove',function(e){
             if(clear&&clearIng){
                 self.ctx.clearRect(e.layerX,e.layerY,20,20);
+                 self.socket.emit('clearing', {
+                    x: e.layerX ,
+                    y: e.layerY ,
+                    color: self.curColor
+                });
             }else if(draw){
                 self. ctx.lineTo(e.layerX,e.layerY);
                 self.ctx.stroke();
@@ -178,6 +193,7 @@ var index = {
         })
         $clearAll.addEventListener('click',function(e){
             self.ctx.clearRect(0,0,800,600);
+            self.socket.emit('clearAll',{});
         });
 
 
