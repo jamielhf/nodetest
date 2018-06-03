@@ -8,4 +8,4 @@
 npm install
 npm run dev
 ```
-
+默认是监听 3003端口  在本地打开localhost:3003 就可以了
